@@ -337,7 +337,7 @@ const createYupSchemaAttribute = (type, validations, options) => {
           break;
         }
         case 'regex':
-          schema = schema.matches(new RegExp(validationValue), {
+          schema = schema.matches(new RegExp(validationValue.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')), {
             message: errorsTrads.regex,
             excludeEmptyString: !validations.required,
           });

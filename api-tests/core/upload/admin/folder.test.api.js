@@ -16,7 +16,12 @@ const data = {
 };
 
 const rootPathRegex = /^\/[0-9]*$/i;
-const getFolderPathRegex = (pathId) => new RegExp(`^/${pathId}/[0-9]*$`, 'i');
+const escapeRegExp = (string) => string.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+
+const getFolderPathRegex = (pathId) => {
+  const sanitizedPathId = escapeRegExp(pathId);
+  return new RegExp(`^/${sanitizedPathId}/[0-9]*$`, 'i');
+};
 
 const createFolder = async (name, parent = null) => {
   const res = await rq({

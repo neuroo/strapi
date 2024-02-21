@@ -1,4 +1,4 @@
-import { join } from 'path';
+import { join, resolve, normalize } from 'path';
 import fs from 'fs-extra';
 
 import type { PromptQuestion } from 'node-plop';
@@ -8,6 +8,7 @@ export default (
   basePath: string,
   { rootFolder = false } = {}
 ): Array<PromptQuestion> => {
+  const safeBasePath = resolve(normalize(basePath));
   return [
     {
       type: 'list',
@@ -37,7 +38,7 @@ export default (
       message: 'Which API is this for?',
       name: 'api',
       async choices() {
-        const apiPath = join(basePath, 'api');
+        const apiPath = join(safeBasePath, 'api');
         const exists = await fs.pathExists(apiPath);
 
         if (!exists) {
@@ -60,7 +61,7 @@ export default (
       message: 'Which plugin is this for?',
       name: 'plugin',
       async choices() {
-        const pluginsPath = join(basePath, 'plugins');
+        const pluginsPath = join(safeBasePath, 'plugins');
         const exists = await fs.pathExists(pluginsPath);
 
         if (!exists) {
@@ -68,9 +69,14 @@ export default (
         }
 
         const pluginsDir = await fs.readdir(pluginsPath);
-        const pluginsDirContent = pluginsDir.filter((api) =>
-          fs.lstatSync(join(pluginsPath, api)).isDirectory()
-        );
+        const pluginsDirContent = pluginsDir.filter((api) => {
+          const fullPath = join(pluginsPath, api);
+          const resolvedPath = resolve(fullPath);
+          if (resolvedPath.startsWith(safeBasePath) && fs.lstatSync(resolvedPath).isDirectory()) {
+            return true;
+          }
+          return false;
+        });
 
         if (pluginsDirContent.length === 0) {
           throw Error('The "plugins" directory is empty');

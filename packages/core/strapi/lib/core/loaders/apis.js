@@ -1,6 +1,6 @@
 'use strict';
 
-const { join, extname, basename } = require('path');
+const { join, extname, basename, resolve, sep } = require('path');
 const { existsSync } = require('fs-extra');
 const _ = require('lodash');
 const fse = require('fs-extra');
@@ -19,6 +19,14 @@ const normalizeName = (name) => (isKebabCase(name) ? name : _.kebabCase(name));
 const isDirectory = (fd) => fd.isDirectory();
 const isDotFile = (fd) => fd.name.startsWith('.');
 
+const sanitizePath = (basePath, userPath) => {
+  const resolvedPath = resolve(basePath, userPath);
+  if (!resolvedPath.startsWith(basePath + sep)) {
+    throw new Error('Invalid path access detected');
+  }
+  return resolvedPath;
+};
+
 module.exports = async (strapi) => {
   if (!existsSync(strapi.dirs.dist.api)) {
     return;
@@ -33,7 +41,7 @@ module.exports = async (strapi) => {
   // only load folders
   for (const apiFD of apisFDs) {
     const apiName = normalizeName(apiFD.name);
-    const api = await loadAPI(join(strapi.dirs.dist.api, apiFD.name));
+    const api = await loadAPI(sanitizePath(strapi.dirs.dist.api, apiFD.name));
 
     apis[apiName] = api;
   }
@@ -72,13 +80,13 @@ const loadAPI = async (dir) => {
   const [index, config, routes, controllers, services, policies, middlewares, contentTypes] =
     await Promise.all([
       loadIndex(dir),
-      loadDir(join(dir, 'config')),
-      loadDir(join(dir, 'routes')),
-      loadDir(join(dir, 'controllers')),
-      loadDir(join(dir, 'services')),
-      loadDir(join(dir, 'policies')),
-      loadDir(join(dir, 'middlewares')),
-      loadContentTypes(join(dir, 'content-types')),
+      loadDir(sanitizePath(dir, 'config')),
+      loadDir(sanitizePath(dir, 'routes')),
+      loadDir(sanitizePath(dir, 'controllers')),
+      loadDir(sanitizePath(dir, 'services')),
+      loadDir(sanitizePath(dir, 'policies')),
+      loadDir(sanitizePath(dir, 'middlewares')),
+      loadContentTypes(sanitizePath(dir, 'content-types')),
     ]);
 
   return {
@@ -94,8 +102,8 @@ const loadAPI = async (dir) => {
 };
 
 const loadIndex = async (dir) => {
-  if (await fse.pathExists(join(dir, 'index.js'))) {
-    return loadFile(join(dir, 'index.js'));
+  if (await fse.pathExists(sanitizePath(dir, 'index.js'))) {
+    return loadFile(sanitizePath(dir, 'index.js'));
   }
 };
 
@@ -114,7 +122,7 @@ const loadContentTypes = async (dir) => {
     }
 
     const contentTypeName = normalizeName(fd.name);
-    const contentType = await loadDir(join(dir, fd.name));
+    const contentType = await loadDir(sanitizePath(dir, fd.name));
 
     if (isEmpty(contentType) || isEmpty(contentType.schema)) {
       throw new Error(`Could not load content type found at ${dir}`);
@@ -141,7 +149,7 @@ const loadDir = async (dir) => {
 
     const key = basename(fd.name, extname(fd.name));
 
-    root[normalizeName(key)] = await loadFile(join(dir, fd.name));
+    root[normalizeName(key)] = await loadFile(sanitizePath(dir, fd.name));
   }
 
   return root;

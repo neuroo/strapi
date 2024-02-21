@@ -1,13 +1,15 @@
 const browserslistToEsbuild = require('browserslist-to-esbuild');
 const { ESBuildMinifyPlugin } = require('esbuild-loader');
 const webpack = require('webpack');
+const escapeStringRegexp = require('escape-string-regexp');
 
 const packageJson = require('./package.json');
 
 const nodeModules = [];
 [...Object.keys(packageJson.dependencies), ...Object.keys(packageJson.peerDependencies)].forEach(
   (module) => {
-    nodeModules.push(new RegExp(`^${module}(/.+)?$`));
+    const safeModuleName = escapeStringRegexp(module);
+    nodeModules.push(new RegExp(`^${safeModuleName}(/.+)?$`));
   }
 );
 

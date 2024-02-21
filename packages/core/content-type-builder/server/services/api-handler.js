@@ -4,13 +4,23 @@ const path = require('path');
 const fse = require('fs-extra');
 
 /**
+ * Sanitizes a path segment by removing any path traversal characters
+ * @param {string} segment The path segment to sanitize
+ * @returns {string} The sanitized path segment
+ */
+function sanitizePathSegment(segment) {
+  return segment.replace(/(\.\.(\/|\\|$))+/, '');
+}
+
+/**
  * Deletes the API folder of a contentType
  * @param {string} uid content type uid
  */
 async function clear(uid) {
   const { apiName, modelName } = strapi.contentTypes[uid];
+  const sanitizedApiName = sanitizePathSegment(apiName);
 
-  const apiFolder = path.join(strapi.dirs.app.api, apiName);
+  const apiFolder = path.join(strapi.dirs.app.api, sanitizedApiName);
 
   await recursiveRemoveFiles(apiFolder, createDeleteApiFunction(modelName));
   await deleteBackup(uid);
@@ -22,9 +32,10 @@ async function clear(uid) {
  */
 async function backup(uid) {
   const { apiName } = strapi.contentTypes[uid];
+  const sanitizedApiName = sanitizePathSegment(apiName);
 
-  const apiFolder = path.join(strapi.dirs.app.api, apiName);
-  const backupFolder = path.join(strapi.dirs.app.api, '.backup', apiName);
+  const apiFolder = path.join(strapi.dirs.app.api, sanitizedApiName);
+  const backupFolder = path.join(strapi.dirs.app.api, '.backup', sanitizedApiName);
 
   // backup the api folder
   await fse.copy(apiFolder, backupFolder);
@@ -36,9 +47,10 @@ async function backup(uid) {
  */
 async function deleteBackup(uid) {
   const { apiName } = strapi.contentTypes[uid];
+  const sanitizedApiName = sanitizePathSegment(apiName);
 
   const backupFolder = path.join(strapi.dirs.app.api, '.backup');
-  const apiBackupFolder = path.join(strapi.dirs.app.api, '.backup', apiName);
+  const apiBackupFolder = path.join(strapi.dirs.app.api, '.backup', sanitizedApiName);
 
   await fse.remove(apiBackupFolder);
 
@@ -54,9 +66,10 @@ async function deleteBackup(uid) {
  */
 async function rollback(uid) {
   const { apiName } = strapi.contentTypes[uid];
+  const sanitizedApiName = sanitizePathSegment(apiName);
 
-  const apiFolder = path.join(strapi.dirs.app.api, apiName);
-  const backupFolder = path.join(strapi.dirs.app.api, '.backup', apiName);
+  const apiFolder = path.join(strapi.dirs.app.api, sanitizedApiName);
+  const backupFolder = path.join(strapi.dirs.app.api, '.backup', sanitizedApiName);
 
   const exists = await fse.exists(backupFolder);
 
@@ -75,15 +88,16 @@ async function rollback(uid) {
  */
 const createDeleteApiFunction = (baseName) => {
   /**
-   * Delets a file in an api.
+   * Deletes a file in an api.
    * Will only update routes.json instead of deleting it if other routes are present
    * @param {string} filePath file path to delete
    */
   return async (filePath) => {
     const fileName = path.basename(filePath, path.extname(filePath));
+    const sanitizedFileName = sanitizePathSegment(fileName);
 
     const isSchemaFile = filePath.endsWith(`${baseName}/schema.json`);
-    if (fileName === baseName || isSchemaFile) {
+    if (sanitizedFileName === baseName || isSchemaFile) {
       return fse.remove(filePath);
     }
   };
@@ -98,7 +112,8 @@ const recursiveRemoveFiles = async (folder, deleteFn) => {
   const filesName = await fse.readdir(folder);
 
   for (const fileName of filesName) {
-    const filePath = path.join(folder, fileName);
+    const sanitizedFileName = sanitizePathSegment(fileName);
+    const filePath = path.join(folder, sanitizedFileName);
 
     const stat = await fse.stat(filePath);
 

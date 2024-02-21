@@ -68,7 +68,8 @@ describe('Local Strapi Source Provider - Entities Streaming', () => {
       // We have 2 * 2 entities
       expect(results).toHaveLength(4);
 
-      const matchContentTypeUIDs = new RegExp(`(${Object.keys(getContentTypes()).join('|')})`);
+      const contentTypeUIDs = Object.keys(getContentTypes()).map(uid => uid.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')).join('|');
+      const matchContentTypeUIDs = new RegExp(`(${contentTypeUIDs})`);
 
       // Each result should contain the entity and its parent content type
       results.forEach((result) => {
@@ -119,11 +120,8 @@ describe('Local Strapi Source Provider - Entities Streaming', () => {
           contentType: { uid: 'bar' },
         },
       ];
-      const matchContentTypeUIDs = new RegExp(
-        `(${Object.values(entities)
-          .map((entity) => entity.contentType.uid)
-          .join('|')})`
-      );
+      const contentTypeUIDs = entities.map(e => e.contentType.uid.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')).join('|');
+      const matchContentTypeUIDs = new RegExp(`(${contentTypeUIDs})`);
 
       const entitiesStream = Readable.from(entities);
       const transformStream = createEntitiesTransformStream();

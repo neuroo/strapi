@@ -1,6 +1,6 @@
 'use strict';
 
-const { join } = require('path');
+const { join, resolve, normalize } = require('path');
 const _ = require('lodash');
 const { ApplicationError } = require('@strapi/utils').errors;
 
@@ -17,13 +17,16 @@ module.exports = function createBuilder() {
   const components = Object.keys(strapi.components).map((key) => {
     const compo = strapi.components[key];
 
+    const safeCategory = normalize(compo.category).replace(/^(\.\.(\/|\\|$))+/, '');
+    const componentsPath = resolve(strapi.dirs.app.components);
+
     return {
       category: compo.category,
       modelName: compo.modelName,
       plugin: compo.modelName,
       uid: compo.uid,
       filename: compo.__filename__,
-      dir: join(strapi.dirs.app.components, compo.category),
+      dir: join(componentsPath, safeCategory),
       schema: compo.__schema__,
       config: compo.config,
     };
@@ -32,19 +35,16 @@ module.exports = function createBuilder() {
   const contentTypes = Object.keys(strapi.contentTypes).map((key) => {
     const contentType = strapi.contentTypes[key];
 
-    const dir = contentType.plugin
-      ? join(
-          strapi.dirs.app.extensions,
-          contentType.plugin,
-          'content-types',
-          contentType.info.singularName
-        )
-      : join(
-          strapi.dirs.app.api,
-          contentType.apiName,
-          'content-types',
-          contentType.info.singularName
-        );
+    const safeSingularName = normalize(contentType.info.singularName).replace(/^(\.\.(\/|\\|$))+/, '');
+    const apiOrExtensionsPath = contentType.plugin
+      ? resolve(strapi.dirs.app.extensions, contentType.plugin)
+      : resolve(strapi.dirs.app.api, contentType.apiName);
+
+    const dir = join(
+      apiOrExtensionsPath,
+      'content-types',
+      safeSingularName
+    );
 
     return {
       modelName: contentType.modelName,

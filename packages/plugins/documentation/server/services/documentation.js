@@ -97,10 +97,12 @@ module.exports = ({ strapi }) => {
      */
     getApiDocumentationPath(api) {
       if (api.getter === 'plugin') {
-        return path.join(strapi.dirs.app.extensions, api.name, 'documentation');
+        const sanitizedApiName = path.basename(api.name);
+        return path.join(strapi.dirs.app.extensions, sanitizedApiName, 'documentation');
       }
 
-      return path.join(strapi.dirs.app.api, api.name, 'documentation');
+      const sanitizedApiName = path.basename(api.name);
+      return path.join(strapi.dirs.app.api, sanitizedApiName, 'documentation');
     },
 
     async deleteDocumentation(version) {
@@ -176,7 +178,9 @@ module.exports = ({ strapi }) => {
 
         // TODO: To be confirmed, do we still need to write these files...?
         const apiDirPath = path.join(this.getApiDocumentationPath(api), version);
-        const apiDocPath = path.join(apiDirPath, `${apiName}.json`);
+        const path = require('path');
+        const apiNameSanitized = path.basename(apiName);
+        const apiDocPath = path.join(apiDirPath, `${apiNameSanitized}.json`);
         await fs.ensureFile(apiDocPath);
         await fs.writeJson(apiDocPath, newApiPath, { spaces: 2 });
 

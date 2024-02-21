@@ -127,6 +127,8 @@
               />
               <h2 class="sub-title">Enter the password to access the documentation.</h2>
               <form method="post" action="<%=actionUrl%>">
+                <!-- CSRF Token -->
+                <input type="hidden" name="csrf_token" value="<%= csrfToken %>" />
                 <span class="error">Wrong password...</span>
                 <label>Password</label>
                 <input
@@ -143,3 +145,4 @@
     </div>
   </body>
 </html>
+

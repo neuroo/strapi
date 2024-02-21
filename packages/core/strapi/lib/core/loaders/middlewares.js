@@ -1,6 +1,6 @@
 'use strict';
 
-const { join, extname, basename } = require('path');
+const { join, extname, basename, resolve, sep } = require('path');
 const fse = require('fs-extra');
 const { importDefault } = require('@strapi/utils');
 
@@ -25,7 +25,12 @@ const loadLocalMiddlewares = async (strapi) => {
 
   for (const fd of paths) {
     const { name } = fd;
+    if (name.includes('..')) continue; // Skip any paths that may lead to directory traversal
     const fullPath = join(dir, name);
+
+    // Ensure the fullPath is still within the intended directory
+    const normalizedPath = resolve(fullPath);
+    if (!normalizedPath.startsWith(resolve(dir) + sep)) continue;
 
     if (fd.isFile() && extname(name) === '.js') {
       const key = basename(name, '.js');

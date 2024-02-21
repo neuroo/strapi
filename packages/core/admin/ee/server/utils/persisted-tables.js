@@ -97,7 +97,8 @@ async function setPersistedTables({ strapi }, tableNames) {
  */
 
 const persistTablesWithPrefix = async (tableNamePrefix) => {
-  const tableNameRegex = new RegExp(`^${tableNamePrefix}.*`);
+  const escapedPrefix = tableNamePrefix.replace(/[-\/\\^$*+?.()|[\]{}]/g, '\\$&');
+  const tableNameRegex = new RegExp(`^${escapedPrefix}.*`);
   const tableNames = await findTables({ strapi }, tableNameRegex);
 
   await addPersistTables({ strapi }, tableNames);
@@ -109,7 +110,8 @@ const persistTablesWithPrefix = async (tableNamePrefix) => {
  * @return {Promise<void>}
  */
 const removePersistedTablesWithSuffix = async (tableNameSuffix) => {
-  const tableNameRegex = new RegExp(`.*${tableNameSuffix}$`);
+  const escapedSuffix = tableNameSuffix.replace(/[-\/\\^$*+?.()|[\]{}]/g, '\\$&');
+  const tableNameRegex = new RegExp(`.*${escapedSuffix}$`);
   const persistedTables = await getPersistedTables({ strapi });
 
   const filteredPersistedTables = persistedTables.filter((table) => {

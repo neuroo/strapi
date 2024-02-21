@@ -131,7 +131,18 @@ const uploadImg = (fileName) => {
     method: 'POST',
     url: '/upload',
     formData: {
-      files: fs.createReadStream(path.join(__dirname, `../utils/${fileName}`)),
+      const path = require('path');
+      const fs = require('fs');
+      
+      // ...
+      
+      function sanitizeFileName(fileName) {
+        return path.basename(fileName);
+      }
+      
+      // ...
+      
+      files: fs.createReadStream(path.join(__dirname, '../utils', sanitizeFileName(fileName))),
     },
   });
 };
